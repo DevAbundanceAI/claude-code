@@ -3,7 +3,7 @@ ARG TZ
 ENV TZ="$TZ"
 ARG CLAUDE_CODE_VERSION=latest
 
-# Install basic development tools
+# Install basic development tools + ttyd
 RUN apt-get update && apt-get install -y --no-install-recommends \
   less \
   git \
@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   jq \
   nano \
   vim \
+  ttyd \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Ensure default node user has access to /usr/local/share
@@ -32,7 +33,7 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhisto
   && touch /commandhistory/.bash_history \
   && chown -R $USERNAME /commandhistory
 
-# Set `DEVCONTAINER` environment variable to help with orientation
+# Set DEVCONTAINER environment variable
 ENV DEVCONTAINER=true
 
 # Create config directories and set permissions
@@ -54,7 +55,7 @@ USER node
 ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
 ENV PATH=$PATH:/usr/local/share/npm-global/bin
 
-# Set the default shell to zsh
+# Shell and editor settings
 ENV SHELL=/bin/zsh
 ENV EDITOR=nano
 ENV VISUAL=nano
@@ -71,17 +72,10 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 # Install Claude Code
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
-# Install ttyd for browser-based terminal
-RUN apt-get update && apt-get install -y ttyd
+USER root
 
-# Expose port
+# Expose ttyd port
 EXPOSE 7681
 
-# Run ttyd + keep alive
-CMD ["ttyd", "-p", "7681", "zsh"]
-
-USER root
-USER node
-
-# Keep container alive
-CMD ["sleep", "infinity"]
+# Start ttyd serving zsh in browser
+CMD ["ttyd", "-p", "7681", "-W", "zsh"]
