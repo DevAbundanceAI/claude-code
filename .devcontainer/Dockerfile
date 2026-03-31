@@ -31,7 +31,7 @@ RUN wget -O /usr/local/bin/ttyd https://github.com/tsl0922/ttyd/releases/downloa
 RUN mkdir -p /usr/local/share/npm-global && \
   chown -R node:node /usr/local/share
 
-# Write supervisord config inline — no external file needed
+# Write supervisord config
 RUN mkdir -p /etc/supervisor/conf.d && printf '%s\n' \
   '[supervisord]' \
   'nodaemon=true' \
@@ -50,17 +50,6 @@ RUN mkdir -p /etc/supervisor/conf.d && printf '%s\n' \
   'stdout_logfile=/data/ttyd.out.log' \
   'user=root' \
   > /etc/supervisor/conf.d/supervisord.conf
-
-[program:ttyd]
-command=ttyd -p 7681 -W tmux new-session -A -s main
-autostart=true
-autorestart=true
-startsecs=3
-startretries=999
-stderr_logfile=/data/ttyd.err.log
-stdout_logfile=/data/ttyd.out.log
-user=root
-EOF
 
 ARG USERNAME=node
 
