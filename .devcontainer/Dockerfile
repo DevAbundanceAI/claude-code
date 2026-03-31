@@ -3,7 +3,7 @@ ARG TZ
 ENV TZ="$TZ"
 ARG CLAUDE_CODE_VERSION=latest
 
-# Install basic development tools
+# Install basic development tools + supervisor
 RUN apt-get update && apt-get install -y --no-install-recommends \
   less \
   git \
@@ -19,7 +19,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   nano \
   vim \
   wget \
-  libwebsockets-dev \
+  libwebsockets17 \
+  supervisor \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install ttyd from binary
@@ -38,14 +39,17 @@ RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhisto
   && touch /commandhistory/.bash_history \
   && chown -R $USERNAME /commandhistory
 
-# Set DEVCONTAINER environment variable
 ENV DEVCONTAINER=true
 
-# Create config directories and set permissions
-RUN mkdir -p /home/node/.claude && \
-  chown -R node:node /home/node/.claude
+# Create config directories and persistent data dir
+RUN mkdir -p /home/node/.claude /data && \
+  chown -R node:node /home/node/.claude /data
 
-WORKDIR /root
+# Supervisor config to auto-restart ttyd forever
+RUN mkdir -p /etc/supervisor/conf.d
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+WORKDIR /data
 
 ARG GIT_DELTA_VERSION=0.18.2
 RUN ARCH=$(dpkg --print-architecture) && \
@@ -53,14 +57,10 @@ RUN ARCH=$(dpkg --print-architecture) && \
   sudo dpkg -i "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
   rm "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb"
 
-# Set up non-root user
 USER node
 
-# Install global packages
 ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
 ENV PATH=$PATH:/usr/local/share/npm-global/bin
-
-# Shell and editor settings
 ENV SHELL=/bin/zsh
 ENV EDITOR=nano
 ENV VISUAL=nano
@@ -79,8 +79,7 @@ RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
 USER root
 
-# Expose ttyd port
 EXPOSE 7681
 
-# Start ttyd serving zsh in browser
-CMD ["ttyd", "-p", "7681", "-W", "zsh"]
+# Supervisor keeps ttyd alive forever
+CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
