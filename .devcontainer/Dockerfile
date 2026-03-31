@@ -71,6 +71,15 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 # Install Claude Code
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
+# Install ttyd for browser-based terminal
+RUN apt-get update && apt-get install -y ttyd
+
+# Expose port
+EXPOSE 7681
+
+# Run ttyd + keep alive
+CMD ["ttyd", "-p", "7681", "zsh"]
+
 USER root
 USER node
 
