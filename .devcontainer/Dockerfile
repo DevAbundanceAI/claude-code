@@ -31,6 +31,25 @@ RUN wget -O /usr/local/bin/ttyd https://github.com/tsl0922/ttyd/releases/downloa
 RUN mkdir -p /usr/local/share/npm-global && \
   chown -R node:node /usr/local/share
 
+RUN mkdir -p /etc/supervisor/conf.d && cat > /etc/supervisor/conf.d/supervisord.conf << 'EOF'
+[supervisord]
+nodaemon=true
+logfile=/data/supervisord.log
+logfile_maxbytes=10MB
+pidfile=/tmp/supervisord.pid
+user=root
+
+[program:ttyd]
+command=ttyd -p 7681 -W tmux new-session -A -s main
+autostart=true
+autorestart=true
+startsecs=3
+startretries=999
+stderr_logfile=/data/ttyd.err.log
+stdout_logfile=/data/ttyd.out.log
+user=root
+environment=ANTHROPIC_API_KEY="%(ENV_ANTHROPIC_API_KEY)s",NPM_CONFIG_PREFIX="/usr/local/share/npm-global",PATH="/usr/local/share/npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",HOME="/root",SHELL="/bin/zsh"
+EOF  
 ARG USERNAME=node
 
 # Persist bash history
