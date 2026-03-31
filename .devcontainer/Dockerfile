@@ -32,21 +32,24 @@ RUN mkdir -p /usr/local/share/npm-global && \
   chown -R node:node /usr/local/share
 
 # Write supervisord config inline — no external file needed
-RUN mkdir -p /etc/supervisor/conf.d && cat > /etc/supervisor/conf.d/supervisord.conf << 'EOF'
-[supervisord]
-nodaemon=true
-logfile=/data/supervisord.log
-logfile_maxbytes=10MB
-pidfile=/tmp/supervisord.pid
-user=root
-
-RUN mkdir -p /etc/supervisor/conf.d && cat > /etc/supervisor/conf.d/supervisord.conf << 'EOF'
-[supervisord]
-nodaemon=true
-logfile=/data/supervisord.log
-logfile_maxbytes=10MB
-pidfile=/tmp/supervisord.pid
-user=root
+RUN mkdir -p /etc/supervisor/conf.d && printf '%s\n' \
+  '[supervisord]' \
+  'nodaemon=true' \
+  'logfile=/data/supervisord.log' \
+  'logfile_maxbytes=10MB' \
+  'pidfile=/tmp/supervisord.pid' \
+  'user=root' \
+  '' \
+  '[program:ttyd]' \
+  'command=ttyd -p 7681 -W tmux new-session -A -s main' \
+  'autostart=true' \
+  'autorestart=true' \
+  'startsecs=3' \
+  'startretries=999' \
+  'stderr_logfile=/data/ttyd.err.log' \
+  'stdout_logfile=/data/ttyd.out.log' \
+  'user=root' \
+  > /etc/supervisor/conf.d/supervisord.conf
 
 [program:ttyd]
 command=ttyd -p 7681 -W tmux new-session -A -s main
