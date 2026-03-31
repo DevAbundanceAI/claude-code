@@ -31,6 +31,7 @@ RUN wget -O /usr/local/bin/ttyd https://github.com/tsl0922/ttyd/releases/downloa
 RUN mkdir -p /usr/local/share/npm-global && \
   chown -R node:node /usr/local/share
 
+# Write supervisord config inline — no external file needed
 RUN mkdir -p /etc/supervisor/conf.d && cat > /etc/supervisor/conf.d/supervisord.conf << 'EOF'
 [supervisord]
 nodaemon=true
@@ -49,7 +50,8 @@ stderr_logfile=/data/ttyd.err.log
 stdout_logfile=/data/ttyd.out.log
 user=root
 environment=ANTHROPIC_API_KEY="%(ENV_ANTHROPIC_API_KEY)s",NPM_CONFIG_PREFIX="/usr/local/share/npm-global",PATH="/usr/local/share/npm-global/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",HOME="/root",SHELL="/bin/zsh"
-EOF  
+EOF
+
 ARG USERNAME=node
 
 # Persist bash history
@@ -63,10 +65,6 @@ ENV DEVCONTAINER=true
 # Create config directories and persistent data dir
 RUN mkdir -p /home/node/.claude /data && \
   chown -R node:node /home/node/.claude /data
-
-# Supervisor config to auto-restart ttyd forever
-RUN mkdir -p /etc/supervisor/conf.d
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 WORKDIR /data
 
@@ -100,5 +98,4 @@ USER root
 
 EXPOSE 7681
 
-# Supervisor keeps ttyd alive forever
 CMD ["/usr/bin/supervisord", "-n", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
