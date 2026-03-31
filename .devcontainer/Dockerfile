@@ -3,7 +3,7 @@ ARG TZ
 ENV TZ="$TZ"
 ARG CLAUDE_CODE_VERSION=latest
 
-# Install basic development tools + ttyd
+# Install basic development tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
   less \
   git \
@@ -18,8 +18,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   jq \
   nano \
   vim \
-  ttyd \
+  wget \
+  libwebsockets-dev \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install ttyd from binary
+RUN wget -O /usr/local/bin/ttyd https://github.com/tsl0922/ttyd/releases/download/1.7.4/ttyd.x86_64 \
+  && chmod +x /usr/local/bin/ttyd
 
 # Ensure default node user has access to /usr/local/share
 RUN mkdir -p /usr/local/share/npm-global && \
